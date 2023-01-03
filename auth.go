@@ -51,6 +51,12 @@ func (c *Client) CreateSessionToken() (*sessionToken, error) {
 	return readBody[sessionToken](res)
 }
 
+// Allow external refresh of the session token
+
+func (c *Client) UpdateSessionToken(token sessionToken) {
+	c.sessionToken = token
+}
+
 // Check if the client has the specified permission
 func (c *Client) HasPermission(permission APIPermission) bool {
 	for _, v := range c.permissions {

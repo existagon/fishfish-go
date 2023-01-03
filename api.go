@@ -45,7 +45,7 @@ func New(primaryToken string, permissions []APIPermission) (*Client, error) {
 			return nil, fmt.Errorf("failed to create session token: %s", err)
 		}
 
-		client.sessionToken = *token
+		client.UpdateSessionToken(*token)
 		client.defaultAuthType = authTypeSession
 	} else {
 		client.defaultAuthType = authTypeNone
