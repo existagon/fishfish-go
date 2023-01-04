@@ -2,13 +2,12 @@ package fishfish_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/existentiality/fishfish-go"
 )
 
 func TestGetURLs(t *testing.T) {
-	urls, err := rawClient.GetURLs(fishfish.CategoryPhishing, false)
+	urls, err := rawClient.GetURLs(fishfish.CategoryPhishing)
 
 	mustPanic(err)
 
@@ -26,7 +25,7 @@ func TestGetURLsFull(t *testing.T) {
 func TestGetURL(t *testing.T) {
 	// There are currently no URLs in the databse, skip
 	t.SkipNow()
-	url, err := rawClient.GetURL("https://fishfish.gg/api.html", true)
+	url, err := rawClient.GetURL("https://fishfish.gg/api.html")
 
 	mustPanic(err)
 
@@ -38,7 +37,10 @@ func TestAddURL(t *testing.T) {
 		t.Skip("missing permission")
 	}
 
-	added, err := rawClient.AddURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
+	added, err := rawClient.AddURL("https://api.fishfish.gg/v1/docs", fishfish.CreateURLRequest{
+		Category:    fishfish.CategorySafe,
+		Description: "FishFish API v1 Docs",
+	})
 
 	mustPanic(err)
 
@@ -50,26 +52,11 @@ func TestUpdateURL(t *testing.T) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := rawClient.UpdateURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
-
-	mustPanic(err)
-
-	t.Logf("updated url %s", updated.URL)
-}
-
-func TestUpdateURLMetadata(t *testing.T) {
-	if !rawClient.HasPermission(fishfish.APIPermissionURLs) {
-		t.Skip("missing permission")
-	}
-
-	updated, err := rawClient.UpdateURLMetadata("https://fishfish.gg/api.html", fishfish.URLMetadata{
-		Target: "fishfish",
-		Active: time.Now(),
+	err := rawClient.UpdateURL("https://api.fishfish.gg/v1/docs", fishfish.UpdateURLRequest{
+		Description: "Amazing FishFish API v1 Docs",
 	})
 
 	mustPanic(err)
-
-	t.Logf("updated metadata for https://fishfish.gg/api.html (last active %s, target %s)", updated.Active, updated.Target)
 }
 
 func TestDeleteURL(t *testing.T) {
@@ -77,7 +64,7 @@ func TestDeleteURL(t *testing.T) {
 		t.Skip("missing permission")
 	}
 
-	err := rawClient.DeleteURL("https://fishfish.gg/api.html")
+	err := rawClient.DeleteURL("https://api.fishfish.gg/v1/docs")
 
 	mustPanic(err)
 

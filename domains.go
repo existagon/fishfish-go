@@ -6,28 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 )
 
 type Domain struct {
-	Domain      string          `json:"name"`
-	Description string          `json:"description"`
-	Category    Category        `json:"category"`
-	Apex        bool            `json:"apex"`
-	Meta        *DomainMetadata `json:"meta,omitempty"`
+	Domain      string   `json:"name"`
+	Description string   `json:"description"`
+	Category    Category `json:"category"`
+	Added       int64    `json:"added"`
+	Checked     int64    `json:"checked"`
+	Target      string   `json:"target,omitempty"`
 }
 
-type DomainMetadata struct {
-	Path    string    `json:"path,omitempty"`
-	Urlscan string    `json:"urlscan,omitempty"`
-	Active  time.Time `json:"active,omitempty"`
-	Target  string    `json:"target,omitempty"`
+func (c *RawClient) GetDomain(domain string) (*Domain, error) {
+	path := fmt.Sprintf("/domains/%s", domain)
+	res, err := c.makeRequest("GET", path, nil, nil, c.defaultAuthType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return readBody[Domain](res)
 }
 
-func (c *RawClient) GetDomains(category Category, recent bool) (*[]string, error) {
+func (c *RawClient) GetDomains(category Category) (*[]string, error) {
 	query := makeQuery(map[string]string{
 		"category": string(category),
-		"recent":   strconv.FormatBool(recent),
 	})
 	res, err := c.makeRequest("GET", "/domains", query, nil, c.defaultAuthType)
 
@@ -36,19 +39,6 @@ func (c *RawClient) GetDomains(category Category, recent bool) (*[]string, error
 	}
 
 	return readBody[[]string](res)
-}
-
-func (c *RawClient) GetDomain(domain string, detailed bool) (*Domain, error) {
-	query := makeQuery(map[string]string{"detailed": strconv.FormatBool(detailed)})
-	path := fmt.Sprintf("/domains/%s", domain)
-
-	res, err := c.makeRequest("GET", path, query, nil, c.defaultAuthType)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return readBody[Domain](res)
 }
 
 func (c *RawClient) GetDomainsFull() (*[]Domain, error) {
@@ -67,22 +57,25 @@ func (c *RawClient) GetDomainsFull() (*[]Domain, error) {
 	return readBody[[]Domain](res)
 }
 
-func (c *RawClient) AddDomain(domain string, category Category, apex bool) (*Domain, error) {
+type CreateDomainRequest struct {
+	Category    Category `json:"category"`
+	Description string   `json:"description"`
+	Target      string   `json:"target,omitempty"`
+}
+
+func (c *RawClient) AddDomain(domain string, options CreateDomainRequest) (*Domain, error) {
 	if !c.HasPermission(APIPermissionDomains) {
 		return nil, errors.New("missing permission: domains")
 	}
 
-	body, err := json.Marshal(Domain{
-		Domain:   domain,
-		Category: category,
-		Apex:     apex,
-	})
+	body, err := json.Marshal(options)
 
 	if err != nil {
 		return nil, fmt.Errorf("error creating body for AddDomain: %s", err)
 	}
 
-	res, err := c.makeRequest("POST", "/domains", nil, bytes.NewBuffer(body), authTypeSession)
+	path := fmt.Sprintf("/domains/%s", domain)
+	res, err := c.makeRequest("POST", path, nil, bytes.NewBuffer(body), authTypeSession)
 
 	if err != nil {
 		return nil, err
@@ -91,14 +84,18 @@ func (c *RawClient) AddDomain(domain string, category Category, apex bool) (*Dom
 	return readBody[Domain](res)
 }
 
-func (c *RawClient) UpdateDomain(domain string, category Category) (*Domain, error) {
+type UpdateDomainRequest struct {
+	Category    Category `json:"category,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Target      string   `json:"target,omitempty"`
+}
+
+func (c *RawClient) UpdateDomain(domain string, options UpdateDomainRequest) (*Domain, error) {
 	if !c.HasPermission(APIPermissionDomains) {
 		return nil, errors.New("missing permission: domains")
 	}
 
-	body, err := json.Marshal(Domain{
-		Category: category,
-	})
+	body, err := json.Marshal(options)
 
 	if err != nil {
 		return nil, fmt.Errorf("error creating body for UpdateDomain: %s", err)
@@ -112,26 +109,6 @@ func (c *RawClient) UpdateDomain(domain string, category Category) (*Domain, err
 	}
 
 	return readBody[Domain](res)
-}
-
-func (c *RawClient) UpdateDomainMetadata(domain string, metadata DomainMetadata) (*DomainMetadata, error) {
-	if !c.HasPermission(APIPermissionDomains) {
-		return nil, errors.New("missing permission: domains")
-	}
-	body, err := json.Marshal(metadata)
-
-	if err != nil {
-		return nil, fmt.Errorf("error creating body for UpdateDomainMetadata: %s", err)
-	}
-
-	path := fmt.Sprintf("/domains/%s/metadata", domain)
-	res, err := c.makeRequest("PATCH", path, nil, bytes.NewBuffer(body), authTypeSession)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return readBody[DomainMetadata](res)
 }
 
 func (c *RawClient) DeleteDomain(domain string) error {

@@ -35,7 +35,7 @@ func TestErrors(t *testing.T) {
 		panic(fmt.Errorf("incorrect error message for 401. expected %s got %s", expected, err))
 	}
 
-	_, err = rawClient.GetDomain("example.com", false)
+	_, err = rawClient.GetDomain("example.com")
 
 	expected = "resource not found"
 	if err.Error() != expected {

@@ -6,25 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 )
 
 type URL struct {
-	URL      string       `json:"url"`
-	Category Category     `json:"category"`
-	Meta     *URLMetadata `json:"meta,omitempty"`
+	URL         string   `json:"url"`
+	Description string   `json:"description"`
+	Category    Category `json:"category"`
+	Added       int64    `json:"added"`
+	Checked     int64    `json:"checked"`
+	Target      string   `json:"target,omitempty"`
 }
 
-type URLMetadata struct {
-	Urlscan string    `json:"urlscan,omitempty"`
-	Active  time.Time `json:"active,omitempty"`
-	Target  string    `json:"target,omitempty"`
+func (c *RawClient) GetURL(url string) (*URL, error) {
+	path := fmt.Sprintf("/urls/%s", url)
+	res, err := c.makeRequest("GET", path, nil, nil, c.defaultAuthType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return readBody[URL](res)
 }
 
-func (c *RawClient) GetURLs(category Category, recent bool) (*[]string, error) {
+func (c *RawClient) GetURLs(category Category) (*[]string, error) {
 	query := makeQuery(map[string]string{
 		"category": string(category),
-		"recent":   strconv.FormatBool(recent),
 	})
 	res, err := c.makeRequest("GET", "/urls", query, nil, c.defaultAuthType)
 
@@ -33,19 +39,6 @@ func (c *RawClient) GetURLs(category Category, recent bool) (*[]string, error) {
 	}
 
 	return readBody[[]string](res)
-}
-
-func (c *RawClient) GetURL(url string, detailed bool) (*URL, error) {
-	query := makeQuery(map[string]string{"detailed": strconv.FormatBool(detailed)})
-	path := fmt.Sprintf("/urls/%s", url)
-
-	res, err := c.makeRequest("GET", path, query, nil, c.defaultAuthType)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return readBody[URL](res)
 }
 
 func (c *RawClient) GetURLsFull() (*[]URL, error) {
@@ -64,21 +57,25 @@ func (c *RawClient) GetURLsFull() (*[]URL, error) {
 	return readBody[[]URL](res)
 }
 
-func (c *RawClient) AddURL(url string, category Category) (*URL, error) {
+type CreateURLRequest struct {
+	Category    Category `json:"category"`
+	Description string   `json:"description"`
+	Target      string   `json:"target,omitempty"`
+}
+
+func (c *RawClient) AddURL(url string, options CreateURLRequest) (*URL, error) {
 	if !c.HasPermission(APIPermissionURLs) {
 		return nil, errors.New("missing permission: urls")
 	}
 
-	body, err := json.Marshal(URL{
-		URL:      url,
-		Category: category,
-	})
+	body, err := json.Marshal(options)
 
 	if err != nil {
 		return nil, fmt.Errorf("error creating body for AddURL: %s", err)
 	}
 
-	res, err := c.makeRequest("POST", "/urls", nil, bytes.NewBuffer(body), authTypeSession)
+	path := fmt.Sprintf("/urls/%s", url)
+	res, err := c.makeRequest("POST", path, nil, bytes.NewBuffer(body), authTypeSession)
 
 	if err != nil {
 		return nil, err
@@ -87,47 +84,27 @@ func (c *RawClient) AddURL(url string, category Category) (*URL, error) {
 	return readBody[URL](res)
 }
 
-func (c *RawClient) UpdateURL(url string, category Category) (*URL, error) {
+type UpdateURLRequest struct {
+	Category    Category `json:"category,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Target      string   `json:"target,omitempty"`
+}
+
+func (c *RawClient) UpdateURL(url string, options UpdateURLRequest) error {
 	if !c.HasPermission(APIPermissionURLs) {
-		return nil, errors.New("missing permission: urls")
+		return errors.New("missing permission: urls")
 	}
 
-	body, err := json.Marshal(URL{
-		Category: category,
-	})
+	body, err := json.Marshal(options)
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating body for UpdateURLs: %s", err)
+		return fmt.Errorf("error creating body for UpdateURLs: %s", err)
 	}
 
 	path := fmt.Sprintf("/urls/%s", url)
-	res, err := c.makeRequest("PATCH", path, nil, bytes.NewBuffer(body), authTypeSession)
+	_, err = c.makeRequest("PATCH", path, nil, bytes.NewBuffer(body), authTypeSession)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return readBody[URL](res)
-}
-
-func (c *RawClient) UpdateURLMetadata(url string, metadata URLMetadata) (*URLMetadata, error) {
-	if !c.HasPermission(APIPermissionURLs) {
-		return nil, errors.New("missing permission: urls")
-	}
-	body, err := json.Marshal(metadata)
-
-	if err != nil {
-		return nil, fmt.Errorf("error creating body for UpdateURLMetadata: %s", err)
-	}
-
-	path := fmt.Sprintf("/urls/%s/metadata", url)
-	res, err := c.makeRequest("PATCH", path, nil, bytes.NewBuffer(body), authTypeSession)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return readBody[URLMetadata](res)
+	return err
 }
 
 func (c *RawClient) DeleteURL(url string) error {
@@ -138,6 +115,5 @@ func (c *RawClient) DeleteURL(url string) error {
 	path := fmt.Sprintf("/urls/%s", url)
 	_, err := c.makeRequest("DELETE", path, nil, nil, authTypeSession)
 
-	// No need to check if err is nil, only returning err
 	return err
 }

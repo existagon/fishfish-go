@@ -47,8 +47,8 @@ func TestAutoSyncGetDomain(t *testing.T) {
 		Domain:      "fishfish.gg",
 		Description: "Submitted via FishFish Discord",
 		Category:    fishfish.CategorySafe,
-		Apex:        false,
-		Meta:        nil,
+		Added:       1667617118,
+		Checked:     1667617118,
 	}
 
 	if *domain != expected {

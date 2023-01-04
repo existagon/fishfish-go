@@ -2,13 +2,12 @@ package fishfish_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/existentiality/fishfish-go"
 )
 
 func TestGetDomains(t *testing.T) {
-	domains, err := rawClient.GetDomains(fishfish.CategoryPhishing, false)
+	domains, err := rawClient.GetDomains(fishfish.CategoryPhishing)
 
 	mustPanic(err)
 
@@ -24,7 +23,7 @@ func TestGetDomainsFull(t *testing.T) {
 }
 
 func TestGetDomain(t *testing.T) {
-	domain, err := rawClient.GetDomain("fishfish.gg", true)
+	domain, err := rawClient.GetDomain("fishfish.gg")
 
 	mustPanic(err)
 
@@ -36,7 +35,10 @@ func TestAddDomain(t *testing.T) {
 		t.Skip("missing permission")
 	}
 
-	added, err := rawClient.AddDomain("fishfish.gg", fishfish.CategorySafe, true)
+	added, err := rawClient.AddDomain("fishfish.gg", fishfish.CreateDomainRequest{
+		Category:    fishfish.CategorySafe,
+		Description: "FishFish official site",
+	})
 
 	mustPanic(err)
 
@@ -48,26 +50,13 @@ func TestUpdateDomain(t *testing.T) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := rawClient.UpdateDomain("fishfish.gg", fishfish.CategorySafe)
-
-	mustPanic(err)
-
-	t.Logf("updated domain %s", updated.Domain)
-}
-
-func TestUpdateDomainMetadata(t *testing.T) {
-	if !rawClient.HasPermission(fishfish.APIPermissionDomains) {
-		t.Skip("missing permission")
-	}
-
-	updated, err := rawClient.UpdateDomainMetadata("fishfish.gg", fishfish.DomainMetadata{
-		Target: "fishfish",
-		Active: time.Now(),
+	updated, err := rawClient.UpdateDomain("fishfish.gg", fishfish.UpdateDomainRequest{
+		Category: fishfish.CategoryMalware,
 	})
 
 	mustPanic(err)
 
-	t.Logf("updated metadata for fishfish.gg (last active %s, target %s)", updated.Active, updated.Target)
+	t.Logf("updated domain %s", updated.Domain)
 }
 
 func TestDeleteDomain(t *testing.T) {
