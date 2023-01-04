@@ -86,7 +86,6 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 			select {
 			case <-c.cacheTicker.C:
 				c.ForceSync()
-				fmt.Println("synced!")
 			case <-c.context.ctx.Done():
 				return
 			}
@@ -98,10 +97,8 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 		for {
 			select {
 			case <-c.sessionTicker.C:
-				fmt.Println("old token: ", token)
 				token, _ := c.raw.CreateSessionToken()
 				c.raw.UpdateSessionToken(*token)
-				fmt.Println("new token: ", token)
 			case <-c.context.ctx.Done():
 				return
 			}
