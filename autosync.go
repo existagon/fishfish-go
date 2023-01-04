@@ -75,7 +75,7 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 	// Generate Session Token
 	// The client should already be able to successfully create a token from initialization
 	token, _ := c.raw.CreateSessionToken()
-	c.raw.UpdateSessionToken(*token)
+	c.raw.SetSessionToken(*token)
 
 	// Initial Sync
 	c.ForceSync()
@@ -98,7 +98,7 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 			select {
 			case <-c.sessionTicker.C:
 				token, _ := c.raw.CreateSessionToken()
-				c.raw.UpdateSessionToken(*token)
+				c.raw.SetSessionToken(*token)
 			case <-c.context.ctx.Done():
 				return
 			}

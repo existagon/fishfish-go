@@ -22,7 +22,7 @@ const (
 
 type RawClient struct {
 	primaryToken string
-	sessionToken sessionToken
+	sessionToken SessionToken
 	permissions  []APIPermission
 	apiUrl       string
 	httpClient   *http.Client
@@ -46,7 +46,7 @@ func NewRaw(primaryToken string, permissions []APIPermission) (*RawClient, error
 			return nil, fmt.Errorf("failed to create session token: %s", err)
 		}
 
-		client.UpdateSessionToken(*token)
+		client.SetSessionToken(*token)
 		client.defaultAuthType = authTypeSession
 	} else {
 		client.defaultAuthType = authTypeNone
@@ -99,19 +99,15 @@ func (c *RawClient) makeRequest(method, path string, query url.Values, body *byt
 		return nil, fmt.Errorf("error sending http request: %s", err)
 	}
 
+	// Return response with error for further function-specific checks
 	if res.StatusCode == 404 {
-		return nil, errors.New("resource not found")
+		return res, errors.New("resource not found")
 	} else if res.StatusCode == 401 {
-		return nil, errors.New("invalid FishFish API Token")
+		return res, errors.New("invalid FishFish API Token")
 	} else if res.StatusCode == 403 {
-		// Special case for session token creation
-		if path == "/users/@me/tokens" {
-			return nil, fmt.Errorf("unauthorized for specified permission(s)")
-		}
-
-		return nil, fmt.Errorf("not authorized to perform %s on %s", method, path)
+		return res, fmt.Errorf("not authorized to perform %s on %s", method, path)
 	} else if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, fmt.Errorf("api returned unknown status code: %s", res.Status)
+		return res, fmt.Errorf("api returned unknown status code: %s", res.Status)
 	}
 
 	return res, nil
