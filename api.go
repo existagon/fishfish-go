@@ -3,6 +3,7 @@ package fishfish
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -98,9 +99,19 @@ func (c *RawClient) makeRequest(method, path string, query url.Values, body *byt
 		return nil, fmt.Errorf("error sending http request: %s", err)
 	}
 
-	// Non-ok status code
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, fmt.Errorf("api returned non-200 status code: %s", res.Status)
+	if res.StatusCode == 404 {
+		return nil, errors.New("resource not found")
+	} else if res.StatusCode == 401 {
+		return nil, errors.New("invalid FishFish API Token")
+	} else if res.StatusCode == 403 {
+		// Special case for session token creation
+		if path == "/users/@me/tokens" {
+			return nil, fmt.Errorf("unauthorized for specified permission(s)")
+		}
+
+		return nil, fmt.Errorf("not authorized to perform %s on %s", method, path)
+	} else if res.StatusCode < 200 || res.StatusCode > 299 {
+		return nil, fmt.Errorf("api returned unknown status code: %s", res.Status)
 	}
 
 	return res, nil
