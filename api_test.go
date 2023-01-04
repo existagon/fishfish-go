@@ -7,11 +7,11 @@ import (
 )
 
 var primaryKey = os.Getenv("FISHFISH_API_KEY")
-var client *fishfish.Client
+var rawClient *fishfish.RawClient
 
 func TestNewClient(t *testing.T) {
 	var err error
-	client, err = fishfish.New(primaryKey, []fishfish.APIPermission{})
+	rawClient, err = fishfish.NewRaw(primaryKey, []fishfish.APIPermission{})
 
 	mustPanic(err)
 

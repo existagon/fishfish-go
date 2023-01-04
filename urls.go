@@ -21,7 +21,7 @@ type URLMetadata struct {
 	Target  string    `json:"target,omitempty"`
 }
 
-func (c *Client) GetURLs(category Category, recent bool) (*[]string, error) {
+func (c *RawClient) GetURLs(category Category, recent bool) (*[]string, error) {
 	query := makeQuery(map[string]string{
 		"category": string(category),
 		"recent":   strconv.FormatBool(recent),
@@ -35,7 +35,7 @@ func (c *Client) GetURLs(category Category, recent bool) (*[]string, error) {
 	return readBody[[]string](res)
 }
 
-func (c *Client) GetURL(url string, detailed bool) (*URL, error) {
+func (c *RawClient) GetURL(url string, detailed bool) (*URL, error) {
 	query := makeQuery(map[string]string{"detailed": strconv.FormatBool(detailed)})
 	path := fmt.Sprintf("/urls/%s", url)
 
@@ -48,7 +48,7 @@ func (c *Client) GetURL(url string, detailed bool) (*URL, error) {
 	return readBody[URL](res)
 }
 
-func (c *Client) GetURLsFull() (*[]URL, error) {
+func (c *RawClient) GetURLsFull() (*[]URL, error) {
 	// Requires auth
 	if c.defaultAuthType == authTypeNone {
 		return nil, errors.New("GetURLsFull requires authentication")
@@ -64,7 +64,7 @@ func (c *Client) GetURLsFull() (*[]URL, error) {
 	return readBody[[]URL](res)
 }
 
-func (c *Client) AddURL(url string, category Category) (*URL, error) {
+func (c *RawClient) AddURL(url string, category Category) (*URL, error) {
 	if !c.HasPermission(APIPermissionURLs) {
 		return nil, errors.New("missing permission: urls")
 	}
@@ -87,7 +87,7 @@ func (c *Client) AddURL(url string, category Category) (*URL, error) {
 	return readBody[URL](res)
 }
 
-func (c *Client) UpdateURL(url string, category Category) (*URL, error) {
+func (c *RawClient) UpdateURL(url string, category Category) (*URL, error) {
 	if !c.HasPermission(APIPermissionURLs) {
 		return nil, errors.New("missing permission: urls")
 	}
@@ -110,7 +110,7 @@ func (c *Client) UpdateURL(url string, category Category) (*URL, error) {
 	return readBody[URL](res)
 }
 
-func (c *Client) UpdateURLMetadata(url string, metadata URLMetadata) (*URLMetadata, error) {
+func (c *RawClient) UpdateURLMetadata(url string, metadata URLMetadata) (*URLMetadata, error) {
 	if !c.HasPermission(APIPermissionURLs) {
 		return nil, errors.New("missing permission: urls")
 	}
@@ -130,7 +130,7 @@ func (c *Client) UpdateURLMetadata(url string, metadata URLMetadata) (*URLMetada
 	return readBody[URLMetadata](res)
 }
 
-func (c *Client) DeleteURL(url string) error {
+func (c *RawClient) DeleteURL(url string) error {
 	if !c.HasPermission(APIPermissionURLs) {
 		return errors.New("missing permission: urls")
 	}

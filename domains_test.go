@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetDomains(t *testing.T) {
-	domains, err := client.GetDomains(fishfish.CategoryPhishing, false)
+	domains, err := rawClient.GetDomains(fishfish.CategoryPhishing, false)
 
 	mustPanic(err)
 
@@ -16,7 +16,7 @@ func TestGetDomains(t *testing.T) {
 }
 
 func TestGetDomainsFull(t *testing.T) {
-	domains, err := client.GetDomainsFull()
+	domains, err := rawClient.GetDomainsFull()
 
 	mustPanic(err)
 
@@ -24,7 +24,7 @@ func TestGetDomainsFull(t *testing.T) {
 }
 
 func TestGetDomain(t *testing.T) {
-	domain, err := client.GetDomain("fishfish.gg", true)
+	domain, err := rawClient.GetDomain("fishfish.gg", true)
 
 	mustPanic(err)
 
@@ -32,11 +32,11 @@ func TestGetDomain(t *testing.T) {
 }
 
 func TestAddDomain(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionDomains) {
+	if !rawClient.HasPermission(fishfish.APIPermissionDomains) {
 		t.Skip("missing permission")
 	}
 
-	added, err := client.AddDomain("fishfish.gg", fishfish.CategorySafe, true)
+	added, err := rawClient.AddDomain("fishfish.gg", fishfish.CategorySafe, true)
 
 	mustPanic(err)
 
@@ -44,11 +44,11 @@ func TestAddDomain(t *testing.T) {
 }
 
 func TestUpdateDomain(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionDomains) {
+	if !rawClient.HasPermission(fishfish.APIPermissionDomains) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := client.UpdateDomain("fishfish.gg", fishfish.CategorySafe)
+	updated, err := rawClient.UpdateDomain("fishfish.gg", fishfish.CategorySafe)
 
 	mustPanic(err)
 
@@ -56,11 +56,11 @@ func TestUpdateDomain(t *testing.T) {
 }
 
 func TestUpdateDomainMetadata(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionDomains) {
+	if !rawClient.HasPermission(fishfish.APIPermissionDomains) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := client.UpdateDomainMetadata("fishfish.gg", fishfish.DomainMetadata{
+	updated, err := rawClient.UpdateDomainMetadata("fishfish.gg", fishfish.DomainMetadata{
 		Target: "fishfish",
 		Active: time.Now(),
 	})
@@ -71,11 +71,11 @@ func TestUpdateDomainMetadata(t *testing.T) {
 }
 
 func TestDeleteDomain(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionDomains) {
+	if !rawClient.HasPermission(fishfish.APIPermissionDomains) {
 		t.Skip("missing permission")
 	}
 
-	err := client.DeleteDomain("fishfish.gg")
+	err := rawClient.DeleteDomain("fishfish.gg")
 
 	mustPanic(err)
 

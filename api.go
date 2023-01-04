@@ -19,7 +19,7 @@ const (
 	CategoryMalware  = "malware"
 )
 
-type Client struct {
+type RawClient struct {
 	primaryToken string
 	sessionToken sessionToken
 	permissions  []APIPermission
@@ -29,8 +29,8 @@ type Client struct {
 	defaultAuthType authType
 }
 
-func New(primaryToken string, permissions []APIPermission) (*Client, error) {
-	client := Client{
+func NewRaw(primaryToken string, permissions []APIPermission) (*RawClient, error) {
+	client := RawClient{
 		primaryToken: primaryToken,
 		permissions:  permissions,
 		apiUrl:       apiRoot,
@@ -54,7 +54,7 @@ func New(primaryToken string, permissions []APIPermission) (*Client, error) {
 	return &client, nil
 }
 
-func (c *Client) makeRequest(method, path string, query url.Values, body *bytes.Buffer, authType authType) (*http.Response, error) {
+func (c *RawClient) makeRequest(method, path string, query url.Values, body *bytes.Buffer, authType authType) (*http.Response, error) {
 
 	// Join base and request path
 	requestURL, err := url.JoinPath(c.apiUrl, path)

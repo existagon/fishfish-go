@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetURLs(t *testing.T) {
-	urls, err := client.GetURLs(fishfish.CategoryPhishing, false)
+	urls, err := rawClient.GetURLs(fishfish.CategoryPhishing, false)
 
 	mustPanic(err)
 
@@ -16,7 +16,7 @@ func TestGetURLs(t *testing.T) {
 }
 
 func TestGetURLsFull(t *testing.T) {
-	urls, err := client.GetURLsFull()
+	urls, err := rawClient.GetURLsFull()
 
 	mustPanic(err)
 
@@ -26,7 +26,7 @@ func TestGetURLsFull(t *testing.T) {
 func TestGetURL(t *testing.T) {
 	// There are currently no URLs in the databse, skip
 	t.SkipNow()
-	url, err := client.GetURL("https://fishfish.gg/api.html", true)
+	url, err := rawClient.GetURL("https://fishfish.gg/api.html", true)
 
 	mustPanic(err)
 
@@ -34,11 +34,11 @@ func TestGetURL(t *testing.T) {
 }
 
 func TestAddURL(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionURLs) {
+	if !rawClient.HasPermission(fishfish.APIPermissionURLs) {
 		t.Skip("missing permission")
 	}
 
-	added, err := client.AddURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
+	added, err := rawClient.AddURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
 
 	mustPanic(err)
 
@@ -46,11 +46,11 @@ func TestAddURL(t *testing.T) {
 }
 
 func TestUpdateURL(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionURLs) {
+	if !rawClient.HasPermission(fishfish.APIPermissionURLs) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := client.UpdateURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
+	updated, err := rawClient.UpdateURL("https://fishfish.gg/api.html", fishfish.CategorySafe)
 
 	mustPanic(err)
 
@@ -58,11 +58,11 @@ func TestUpdateURL(t *testing.T) {
 }
 
 func TestUpdateURLMetadata(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionURLs) {
+	if !rawClient.HasPermission(fishfish.APIPermissionURLs) {
 		t.Skip("missing permission")
 	}
 
-	updated, err := client.UpdateURLMetadata("https://fishfish.gg/api.html", fishfish.URLMetadata{
+	updated, err := rawClient.UpdateURLMetadata("https://fishfish.gg/api.html", fishfish.URLMetadata{
 		Target: "fishfish",
 		Active: time.Now(),
 	})
@@ -73,11 +73,11 @@ func TestUpdateURLMetadata(t *testing.T) {
 }
 
 func TestDeleteURL(t *testing.T) {
-	if !client.HasPermission(fishfish.APIPermissionURLs) {
+	if !rawClient.HasPermission(fishfish.APIPermissionURLs) {
 		t.Skip("missing permission")
 	}
 
-	err := client.DeleteURL("https://fishfish.gg/api.html")
+	err := rawClient.DeleteURL("https://fishfish.gg/api.html")
 
 	mustPanic(err)
 

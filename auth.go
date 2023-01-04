@@ -30,7 +30,7 @@ type createSessionToken struct {
 	Permissions []APIPermission `json:"permissions"`
 }
 
-func (c *Client) CreateSessionToken() (*sessionToken, error) {
+func (c *RawClient) CreateSessionToken() (*sessionToken, error) {
 	if c.primaryToken == "" {
 		return nil, errors.New("invalid authentication token")
 	}
@@ -53,12 +53,12 @@ func (c *Client) CreateSessionToken() (*sessionToken, error) {
 
 // Allow external refresh of the session token
 
-func (c *Client) UpdateSessionToken(token sessionToken) {
+func (c *RawClient) UpdateSessionToken(token sessionToken) {
 	c.sessionToken = token
 }
 
 // Check if the client has the specified permission
-func (c *Client) HasPermission(permission APIPermission) bool {
+func (c *RawClient) HasPermission(permission APIPermission) bool {
 	for _, v := range c.permissions {
 		if v == permission {
 			return true

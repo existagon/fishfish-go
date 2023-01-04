@@ -10,10 +10,11 @@ import (
 )
 
 type Domain struct {
-	Domain   string          `json:"name"`
-	Category Category        `json:"category"`
-	Apex     bool            `json:"apex"`
-	Meta     *DomainMetadata `json:"meta,omitempty"`
+	Domain      string          `json:"name"`
+	Description string          `json:"description"`
+	Category    Category        `json:"category"`
+	Apex        bool            `json:"apex"`
+	Meta        *DomainMetadata `json:"meta,omitempty"`
 }
 
 type DomainMetadata struct {
@@ -23,7 +24,7 @@ type DomainMetadata struct {
 	Target  string    `json:"target,omitempty"`
 }
 
-func (c *Client) GetDomains(category Category, recent bool) (*[]string, error) {
+func (c *RawClient) GetDomains(category Category, recent bool) (*[]string, error) {
 	query := makeQuery(map[string]string{
 		"category": string(category),
 		"recent":   strconv.FormatBool(recent),
@@ -37,7 +38,7 @@ func (c *Client) GetDomains(category Category, recent bool) (*[]string, error) {
 	return readBody[[]string](res)
 }
 
-func (c *Client) GetDomain(domain string, detailed bool) (*Domain, error) {
+func (c *RawClient) GetDomain(domain string, detailed bool) (*Domain, error) {
 	query := makeQuery(map[string]string{"detailed": strconv.FormatBool(detailed)})
 	path := fmt.Sprintf("/domains/%s", domain)
 
@@ -50,7 +51,7 @@ func (c *Client) GetDomain(domain string, detailed bool) (*Domain, error) {
 	return readBody[Domain](res)
 }
 
-func (c *Client) GetDomainsFull() (*[]Domain, error) {
+func (c *RawClient) GetDomainsFull() (*[]Domain, error) {
 	// Requires auth
 	if c.defaultAuthType == authTypeNone {
 		return nil, errors.New("GetDomainsFull requires authentication")
@@ -66,7 +67,7 @@ func (c *Client) GetDomainsFull() (*[]Domain, error) {
 	return readBody[[]Domain](res)
 }
 
-func (c *Client) AddDomain(domain string, category Category, apex bool) (*Domain, error) {
+func (c *RawClient) AddDomain(domain string, category Category, apex bool) (*Domain, error) {
 	if !c.HasPermission(APIPermissionDomains) {
 		return nil, errors.New("missing permission: domains")
 	}
@@ -90,7 +91,7 @@ func (c *Client) AddDomain(domain string, category Category, apex bool) (*Domain
 	return readBody[Domain](res)
 }
 
-func (c *Client) UpdateDomain(domain string, category Category) (*Domain, error) {
+func (c *RawClient) UpdateDomain(domain string, category Category) (*Domain, error) {
 	if !c.HasPermission(APIPermissionDomains) {
 		return nil, errors.New("missing permission: domains")
 	}
@@ -113,7 +114,7 @@ func (c *Client) UpdateDomain(domain string, category Category) (*Domain, error)
 	return readBody[Domain](res)
 }
 
-func (c *Client) UpdateDomainMetadata(domain string, metadata DomainMetadata) (*DomainMetadata, error) {
+func (c *RawClient) UpdateDomainMetadata(domain string, metadata DomainMetadata) (*DomainMetadata, error) {
 	if !c.HasPermission(APIPermissionDomains) {
 		return nil, errors.New("missing permission: domains")
 	}
@@ -133,7 +134,7 @@ func (c *Client) UpdateDomainMetadata(domain string, metadata DomainMetadata) (*
 	return readBody[DomainMetadata](res)
 }
 
-func (c *Client) DeleteDomain(domain string) error {
+func (c *RawClient) DeleteDomain(domain string) error {
 	if !c.HasPermission(APIPermissionDomains) {
 		return errors.New("missing permission: domains")
 	}
