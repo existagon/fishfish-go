@@ -16,10 +16,9 @@ type AutoSyncClient struct {
 }
 
 type domainCache struct {
-	mx sync.RWMutex
-	// Store as map to pointer to avoid copying every domain
-	index   map[string]*Domain
-	domains []Domain
+	mx          sync.RWMutex
+	domainIndex map[string]Domain
+	urlIndex    map[string]URL
 }
 
 type syncContext struct {
@@ -52,23 +51,24 @@ func (c *AutoSyncClient) ForceSync() error {
 		return fmt.Errorf("failed to sync: %s", err)
 	}
 
-	c.cache.domains = *domains
-	c.cache.index = map[string]*Domain{}
+	domainArr := *domains
+	c.cache.domainIndex = map[string]Domain{}
 
 	// Index domains in map for faster lookup
-	for i, domain := range c.cache.domains {
-		c.cache.index[domain.Domain] = &c.cache.domains[i]
+	for i, domain := range domainArr {
+		c.cache.domainIndex[domain.Domain] = domainArr[i]
 	}
 
 	return nil
 }
 
-func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
+func (c *AutoSyncClient) StartAutoSync() {
 	context, cancel := context.WithCancel(context.Background())
 	c.context.ctx = context
 	c.context.cancel = cancel
 
-	c.cacheTicker = time.NewTicker(interval)
+	// Force update the cache every hour
+	c.cacheTicker = time.NewTicker(time.Hour)
 	// Session tokens expire after an hour, refresh 15 minutes early just in case
 	c.sessionTicker = time.NewTicker(time.Second * 10)
 
@@ -80,7 +80,7 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 	// Initial Sync
 	c.ForceSync()
 
-	// Start automatically syncing domains
+	// Start automatically syncing domains/urls
 	go func(client *AutoSyncClient) {
 		for {
 			select {
@@ -104,6 +104,121 @@ func (c *AutoSyncClient) StartAutoSync(interval time.Duration) {
 			}
 		}
 	}(c)
+
+	// Start the websocket to add new domains
+	go func(client *AutoSyncClient) {
+		ch := make(chan WSEvent)
+		go client.raw.ConnectWS(c.context.ctx, ch)
+
+		for {
+			data := <-ch
+
+			if data.Data == nil {
+				// WebSocket was closed
+				return
+			}
+
+			c.cache.mx.Lock()
+
+			dataAsMap := data.Data.(map[string]interface{})
+
+			switch data.Type {
+			case WSEventTypeDomainCreate:
+				createData, err := JSONStructToMap[WSCreateDomainData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				now := time.Now().Unix()
+				domain := Domain{
+					Domain:      createData.Domain,
+					Description: createData.Description,
+					Category:    createData.Category,
+					Target:      createData.Target,
+					Added:       now,
+					Checked:     now,
+				}
+				c.cache.domainIndex[domain.Domain] = domain
+			case WSEventTypeDomainUpdate:
+				updateData, err := JSONStructToMap[WSUpdateDomainData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				currentDomain := c.cache.domainIndex[updateData.Domain]
+
+				if updateData.Category != "" {
+					currentDomain.Category = updateData.Category
+				}
+				if updateData.Description != "" {
+					currentDomain.Description = updateData.Description
+				}
+				if updateData.Target != "" {
+					currentDomain.Target = updateData.Target
+				}
+				currentDomain.Checked = updateData.Checked
+			case WSEventTypeDomainDelete:
+				deleteData, err := JSONStructToMap[WSDeleteDomainData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				delete(c.cache.domainIndex, deleteData.Domain)
+			case WSEventTypeURLCreate:
+				createData, err := JSONStructToMap[WSCreateURLData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				now := time.Now().Unix()
+				url := URL{
+					URL:         createData.URL,
+					Description: createData.Description,
+					Category:    createData.Category,
+					Target:      createData.Target,
+					Added:       now,
+					Checked:     now,
+				}
+
+				c.cache.urlIndex[url.URL] = url
+			case WSEventTypeURLUpdate:
+				updateData, err := JSONStructToMap[WSUpdateURLData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				currentURL := c.cache.urlIndex[updateData.URL]
+
+				if updateData.Category != "" {
+					currentURL.Category = updateData.Category
+				}
+				if updateData.Description != "" {
+					currentURL.Description = updateData.Description
+				}
+				if updateData.Target != "" {
+					currentURL.Target = updateData.Target
+				}
+				currentURL.Checked = updateData.Checked
+				c.cache.urlIndex[currentURL.URL] = currentURL
+
+			case WSEventTypeURLDelete:
+				deleteData, err := JSONStructToMap[WSDeleteURLData](dataAsMap)
+
+				if err != nil {
+					continue
+				}
+
+				delete(c.cache.urlIndex, deleteData.URL)
+			}
+
+			c.cache.mx.Unlock()
+		}
+	}(c)
 }
 
 func (c *AutoSyncClient) StopAutoSync() {
@@ -116,18 +231,48 @@ func (c *AutoSyncClient) GetDomains() []Domain {
 	c.cache.mx.RLock()
 	defer c.cache.mx.RUnlock()
 
-	return c.cache.domains
+	values := make([]Domain, 0, len(c.cache.domainIndex))
+	for _, d := range c.cache.domainIndex {
+		values = append(values, d)
+	}
+
+	return values
+}
+
+func (c *AutoSyncClient) GetURLs() []URL {
+	c.cache.mx.RLock()
+	defer c.cache.mx.RUnlock()
+
+	values := make([]URL, 0, len(c.cache.urlIndex))
+	for _, u := range c.cache.urlIndex {
+		values = append(values, u)
+	}
+
+	return values
 }
 
 func (c *AutoSyncClient) GetDomain(domain string) (*Domain, error) {
 	c.cache.mx.RLock()
 	defer c.cache.mx.RUnlock()
 
-	d, ok := c.cache.index[domain]
+	d, ok := c.cache.domainIndex[domain]
 
 	if !ok {
 		return nil, fmt.Errorf("domain %s not found", domain)
 	}
 
-	return d, nil
+	return &d, nil
+}
+
+func (c *AutoSyncClient) GetURL(url string) (*URL, error) {
+	c.cache.mx.RLock()
+	defer c.cache.mx.RUnlock()
+
+	u, ok := c.cache.urlIndex[url]
+
+	if !ok {
+		return nil, fmt.Errorf("url %s not found", url)
+	}
+
+	return &u, nil
 }

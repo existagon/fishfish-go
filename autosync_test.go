@@ -27,7 +27,9 @@ func TestAutoSyncForceSync(t *testing.T) {
 }
 
 func TestAutoSyncStart(t *testing.T) {
-	autoClient.StartAutoSync(time.Minute * 5)
+	autoClient.StartAutoSync()
+
+	time.Sleep(time.Second * 10)
 }
 
 func TestAutoSyncGetDomains(t *testing.T) {
@@ -36,6 +38,8 @@ func TestAutoSyncGetDomains(t *testing.T) {
 	if len(domains) == 0 {
 		panic("no domains")
 	}
+
+	t.Logf("got %d domains", len(domains))
 }
 
 func TestAutoSyncGetDomain(t *testing.T) {
