@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/existentiality/fishfish-go"
 )
@@ -18,7 +17,7 @@ func main() {
 	}
 
 	// Start automatically syncing domains every 5 minutes
-	ffClient.StartAutoSync(time.Minute * 5)
+	ffClient.StartAutoSync()
 
 	// Get domain
 	domain, err := ffClient.GetDomain("fishfish.gg")
