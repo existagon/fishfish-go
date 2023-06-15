@@ -1,4 +1,4 @@
-module github.com/existentiality/fishfish-go
+module github.com/existagon/fishfish-go
 
 go 1.19
 
